@@ -1,29 +1,22 @@
-# Stage 1: Build stage (Development mode)
-FROM node:14 AS build
+# Use official Node.js image
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first to leverage Docker's cache
-COPY package*.json ./ 
-
-# Install dependencies
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of the files
-COPY . . 
+# Copy application code
+COPY . .
 
-# Build the application for production
-RUN npm run build
+# Expose port
+EXPOSE 3000
 
-# Stage 2: Production stage (Nginx)
-FROM nginx:alpine
+# Health check (optional)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
 
-# Copy the build files from the build stage
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Expose port 80 for the container
-EXPOSE 80
-
-# Start Nginx in the background
-CMD ["nginx", "-g", "daemon off;"]
+# Start application
+CMD ["npm", "start"]
